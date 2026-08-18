@@ -166,3 +166,14 @@ Expo Go install supports), via `npm install expo@54.0.37` followed by
 now-unneeded `@react-native/jest-preset` devDependency (only required by
 the SDK 57-era `jest-expo`). Full test suite (8 tests), 100% coverage, and
 `tsc --noEmit` all re-verified green on SDK 54.
+
+### Correction: invalid config plugin entry (post-downgrade)
+
+Running `npx expo start` after the SDK 54 downgrade crashed immediately:
+`PluginError: Unable to resolve a valid config plugin for expo-status-bar`.
+The earlier `expo install --fix` run (during the SDK downgrade) had added
+`"expo-status-bar"` to `app.json`'s `plugins` array, but that package has
+no config plugin (no `app.plugin.js`) — it needs no plugin entry at all.
+Removed it, leaving `"plugins": ["expo-router"]`. Verified with
+`npx expo config --type public` (resolves cleanly, `sdkVersion: '54.0.0'`)
+and re-ran the full test suite (still 8/8 passing, 100% coverage).
