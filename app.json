@@ -7,10 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "hello-home",
     "userInterfaceStyle": "light",
-    "plugins": [
-      "expo-router",
-      "expo-status-bar"
-    ],
+    "plugins": ["expo-router"],
     "ios": {
       "supportsTablet": true
     },
