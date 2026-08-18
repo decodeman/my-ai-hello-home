@@ -144,3 +144,25 @@ expected, not by disabling checks:
 - Not yet validated: a manual run in Expo Go / a simulator (no device or
   simulator available in this environment). Recommended before merging or
   as a follow-up validation step.
+
+### Correction: Expo Go SDK compatibility (post-approval, pre-merge)
+
+The user tried the app in Expo Go on Android and it hung. Root cause: the
+initial scaffold used `npx create-expo-app@latest`, which installed Expo
+SDK 57 without checking it against Expo Go's supported SDK version first.
+The `react-native` skill's "Expo SDK Compatibility" step exists precisely
+to catch this — determine the Expo Go-supported SDK and confirm with the
+user before scaffolding — and it was skipped in the original
+implementation pass.
+
+Fix: downgraded the project to Expo SDK 54.0.37 (the version the user's
+Expo Go install supports), via `npm install expo@54.0.37` followed by
+`npx expo install --fix` to realign all Expo/React Native dependencies
+(`expo-router`, `expo-constants`, `expo-linking`, `expo-status-bar`,
+`react`, `react-native`, `react-native-safe-area-context`,
+`react-native-screens`) and their dev-tooling counterparts (`jest-expo`,
+`babel-preset-expo`, `react-test-renderer`, `@types/react`,
+`@types/jest`, `typescript`) to the versions SDK 54 expects. Removed the
+now-unneeded `@react-native/jest-preset` devDependency (only required by
+the SDK 57-era `jest-expo`). Full test suite (8 tests), 100% coverage, and
+`tsc --noEmit` all re-verified green on SDK 54.
