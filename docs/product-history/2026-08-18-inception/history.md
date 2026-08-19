@@ -85,10 +85,95 @@ and `docs/architecture/adr-0001-expo-router-navigation.md`.
 
 ## Implementation Summary
 
-_Pending approval. To be appended by `/software-foundry:continue-work` (or
-this command, if approved in the same session) after implementation._
+Approved and implemented in the same session.
+
+- Scaffolded an Expo + TypeScript app (`npx create-expo-app`) and added
+  Expo Router with its required peers (`react-native-safe-area-context`,
+  `react-native-screens`, `expo-linking`, `expo-constants`) per ADR-0001.
+  Replaced the default `App.tsx`/`index.ts` entry with `expo-router/entry`.
+- Built via red-green-refactor TDD:
+  - `app/__tests__/index.test.tsx` — Home screen: renders the name field
+    and a disabled submit for empty/whitespace input, enables submit and
+    navigates with the trimmed name for valid input, and asserts a 44pt
+    minimum touch target.
+  - `app/__tests__/greeting.test.tsx` — Greeting screen: renders
+    `Hello, {name}!` from the route param, Back invokes `router.back()`,
+    and asserts a 44pt minimum touch target.
+  - `app/__tests__/navigation.test.tsx` — integration test using
+    `expo-router/testing-library`'s `renderRouter`: submit a name on
+    Home, see the Greeting screen, tap Back, and confirm the Home name
+    field still shows the submitted value.
+  - Implementation: `app/_layout.tsx` (Expo Router stack), `app/index.tsx`
+    (Home), `app/greeting.tsx` (Greeting).
+- Dropped a redundant runtime guard in `Home`'s submit handler once tests
+  showed it was unreachable (the disabled button already prevents
+  submission of an invalid name), keeping 100% branch coverage without
+  dead code.
+- Added a required CI workflow (`.github/workflows/ci.yml`): install,
+  `tsc --noEmit`, then `jest --coverage` with the 100% coverage thresholds
+  configured in `package.json`.
+
+### Toolchain fixes discovered during setup
+
+The scaffolded dependency versions did not agree with each other out of
+the box; each was resolved by pinning to the version its consumer actually
+expected, not by disabling checks:
+
+- `jest@30` is incompatible with `jest-expo@57`'s bundled Jest 29
+  environment packages (`jest-mock@29` lacks a method `jest-runtime@30`
+  calls) — pinned `jest` to `^29.7.0`.
+- `jest-expo` needs `@react-native/jest-preset` as a peer, and its version
+  must track the installed `react-native` release (`0.86.2`), not
+  whatever `npm install` resolves as latest (`0.87.0`) — pinned to
+  `0.86.2`.
+- `expo-router@57.0.14`'s bundled `renderRouter` test helper predates
+  `@testing-library/react-native@14`'s move to an async `render()` (backed
+  by a separate `test-renderer` package) — downgraded RNTL to `^13.3.0`,
+  matching expo-router's own devDependency, which restored the synchronous
+  `render()` the helper expects.
+- RNTL 13.3.3 requires `react-test-renderer`'s version to match `react`
+  exactly — pinned to `19.2.3`.
 
 ## Validation Results
 
-_Pending approval. To be appended after tests are run and the coverage gate
-is verified._
+- `npx jest` — 3 suites, 8 tests, all passing.
+- `npx jest --coverage` — 100% statements, branches, functions, and lines
+  across `app/_layout.tsx`, `app/index.tsx`, and `app/greeting.tsx`; the
+  configured `coverageThreshold` gate passes.
+- `npx tsc --noEmit` — no type errors.
+- Not yet validated: a manual run in Expo Go / a simulator (no device or
+  simulator available in this environment). Recommended before merging or
+  as a follow-up validation step.
+
+### Correction: Expo Go SDK compatibility (post-approval, pre-merge)
+
+The user tried the app in Expo Go on Android and it hung. Root cause: the
+initial scaffold used `npx create-expo-app@latest`, which installed Expo
+SDK 57 without checking it against Expo Go's supported SDK version first.
+The `react-native` skill's "Expo SDK Compatibility" step exists precisely
+to catch this — determine the Expo Go-supported SDK and confirm with the
+user before scaffolding — and it was skipped in the original
+implementation pass.
+
+Fix: downgraded the project to Expo SDK 54.0.37 (the version the user's
+Expo Go install supports), via `npm install expo@54.0.37` followed by
+`npx expo install --fix` to realign all Expo/React Native dependencies
+(`expo-router`, `expo-constants`, `expo-linking`, `expo-status-bar`,
+`react`, `react-native`, `react-native-safe-area-context`,
+`react-native-screens`) and their dev-tooling counterparts (`jest-expo`,
+`babel-preset-expo`, `react-test-renderer`, `@types/react`,
+`@types/jest`, `typescript`) to the versions SDK 54 expects. Removed the
+now-unneeded `@react-native/jest-preset` devDependency (only required by
+the SDK 57-era `jest-expo`). Full test suite (8 tests), 100% coverage, and
+`tsc --noEmit` all re-verified green on SDK 54.
+
+### Correction: invalid config plugin entry (post-downgrade)
+
+Running `npx expo start` after the SDK 54 downgrade crashed immediately:
+`PluginError: Unable to resolve a valid config plugin for expo-status-bar`.
+The earlier `expo install --fix` run (during the SDK downgrade) had added
+`"expo-status-bar"` to `app.json`'s `plugins` array, but that package has
+no config plugin (no `app.plugin.js`) — it needs no plugin entry at all.
+Removed it, leaving `"plugins": ["expo-router"]`. Verified with
+`npx expo config --type public` (resolves cleanly, `sdkVersion: '54.0.0'`)
+and re-ran the full test suite (still 8/8 passing, 100% coverage).
