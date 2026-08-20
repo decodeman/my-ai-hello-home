@@ -7,11 +7,14 @@
     "icon": "./assets/icon.png",
     "scheme": "hello-home",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.robmandinga.myaihellohome",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -26,6 +29,13 @@
     },
     "experiments": {
       "baseUrl": "/my-ai-hello-home"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2150c7fe-a895-48e6-8580-a40776ca6b1b"
+      }
+    },
+    "owner": "robmandinga"
   }
 }

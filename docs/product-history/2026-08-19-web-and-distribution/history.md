@@ -95,3 +95,25 @@ See `docs/architecture/adr-0002-web-client-and-free-distribution.md`
   manual Pages-enable step above) and an actual EAS Android build (blocked
   on `eas login`). Both are recommended as the next validation step once
   the user completes the manual handoff items.
+
+## 9. Confirmation (2026-08-20)
+
+- User completed both manual handoff items: enabled GitHub Pages with
+  source "GitHub Actions", and ran `eas login`.
+- `Deploy web` GitHub Actions workflow ran successfully on push of
+  `ca5b939` (build + deploy jobs both green).
+- User confirmed on their own device/browser that
+  https://decodeman.github.io/my-ai-hello-home/ works end-to-end
+  (Home screen -> enter name -> Greeting screen).
+- Ran `eas init --account robmandinga --non-interactive --force` to create
+  and link the EAS project (`@robmandinga/my-ai-hello-home`, ID
+  `2150c7fe-a895-48e6-8580-a40776ca6b1b`) — added `expo.extra.eas.projectId`
+  and `expo.owner` to `app.json`.
+- First `eas build --platform android --profile preview --non-interactive`
+  attempt failed: EAS requires `android.package` to be set in app config
+  when running non-interactively (normally prompted for interactively).
+  Fixed by adding `"package": "com.robmandinga.myaihellohome"` to
+  `expo.android` in `app.json`.
+- Rebuilt successfully: EAS created a remote keystore and produced a
+  sideloadable APK —
+  https://expo.dev/accounts/robmandinga/projects/my-ai-hello-home/builds/92ff2a28-151c-4bc1-9e41-29d4bb35eba8
